@@ -1,0 +1,141 @@
+<title>신기전 3D</title>
+<meta name="description" content="신기전(神機箭)·문종 화차 3D 교육 웹앱 — 제작(짜임·맞춤·이음), 구조, 화약, 발사 시뮬레이션">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#ece5d3;--fg:#2b2620;--pn:#fbf7ee;--ac:#9e2f1e;--bd:#d4c7ab;--mut:#6d6253;--sky1:#c9d6dc;--sky2:#ece5d3;--grid:#e3dac6;
+ --fd:"Gowun Batang","Noto Serif KR",serif;--fb:"Noto Sans KR",system-ui,sans-serif}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:14px/1.55 var(--fb);display:flex;flex-direction:column;margin:0;padding-inline:16px;box-sizing:border-box}
+header{padding-block:10px 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header h1{font:700 20px/1.2 var(--fd);margin:0}
+header .sub{color:var(--mut);font-size:12.5px}
+#tabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+button,select,input[type=number]{font:inherit;font-size:13px;background:var(--pn);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:4px 10px;cursor:pointer}
+button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+main{flex:1;min-height:0;display:flex;gap:12px;padding-bottom:12px}
+#cv{flex:1;min-width:0;position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(var(--sky1),var(--sky2))}
+#cv canvas{display:block;touch-action:none;cursor:grab}
+#cap{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--fg);color:var(--bg);border-radius:10px;padding:6px 14px;font-weight:700;font-size:13.5px;max-width:calc(100% - 120px);text-align:center;pointer-events:none}
+#cap:empty{display:none}
+#zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px}#zoom button{min-width:38px;min-height:34px;font-size:16px}
+#hint{position:absolute;left:12px;bottom:12px;font-size:12px;color:var(--mut);background:var(--pn);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;opacity:.92}
+#dv{flex:1;min-width:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+aside{width:360px;flex:none;display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto}
+.box{background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:10px 12px}
+.box>b,.box h2{font:700 15px/1.35 var(--fd);margin:0}
+.box h2 small{font:400 12px var(--fb);color:var(--mut)}
+.d{font-size:13px;margin-top:4px}
+.m{font-size:12px;color:var(--mut);margin-top:6px}
+.row{display:flex;gap:6px;align-items:center;font-size:12.5px;margin-top:8px;flex-wrap:wrap}
+.row input[type=range]{flex:1;min-width:90px;accent-color:var(--ac)}
+.lb{color:var(--mut);min-width:60px}
+.k{font-size:11.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+.as{display:inline-block;font-size:10.5px;border:1px solid var(--mut);color:var(--mut);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px}
+#steps{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+#steps button{text-align:left;font-size:12.5px;padding:4px 8px}
+.reads{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:8px;font-size:12.5px}
+.reads b{float:right;font-variant-numeric:tabular-nums}
+.big{font:700 26px/1.2 var(--fd);color:var(--ac);margin-top:6px}
+.chart{background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;position:relative}
+.chart h3{margin:0;font:700 15px/1.35 var(--fd)}
+.chart .sub{font-size:12px;color:var(--mut);margin:2px 0 4px}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart svg text{fill:var(--mut);font:11px var(--fb)}
+.chart svg .lab{fill:var(--fg);font-weight:700}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:2px}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.legend i.sq{width:11px;height:11px;border-radius:3px}
+.src{font-size:11px;color:var(--mut);margin-top:6px;line-height:1.5}.src a{color:inherit}
+i.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);border-radius:8px;padding:5px 9px;font-size:12px;line-height:1.45;white-space:nowrap;z-index:5;box-shadow:0 2px 8px #0003}
+.tip[hidden]{display:none}
+table.t{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{border-bottom:1px solid var(--bd);padding:3px 5px;text-align:right}
+table.t th:first-child,table.t td:first-child{text-align:left}
+.tw{max-height:280px;overflow:auto;margin-top:6px}
+details summary{cursor:pointer;font-weight:700;font-size:13px}
+#quiz{position:fixed;inset:0;background:#0007;display:grid;place-items:center;z-index:20;padding:16px}
+#quiz[hidden]{display:none}
+#quiz .box{max-width:520px;width:100%}
+#qopts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+#qopts button{text-align:left}
+#qopts button.ok{background:#3d7a4a;border-color:#3d7a4a;color:#fff}
+#qopts button.no{background:var(--ac);border-color:var(--ac);color:#fff}
+:root{--c1:#b5612a;--c2:#2f6ea8;--c3:#1f9a8a}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.tags span{font-size:11.5px;border-radius:6px;padding:1px 7px;border:1px solid var(--bd)}
+.tags .rec{background:#2f6ea81a;border-color:#2f6ea866}.tags .est{background:#b5612a1a;border-color:#b5612a66}
+#jbox{display:flex;gap:8px;align-items:center;margin-top:8px;border:1px solid var(--bd);border-radius:10px;padding:6px;background:var(--bg)}
+#jbox canvas{width:150px;height:110px;flex:none;border-radius:8px;background:linear-gradient(var(--sky1),var(--sky2))}
+#jbox[hidden]{display:none}
+#hud{position:absolute;right:62px;bottom:12px;background:var(--pn);border:1px solid var(--bd);border-radius:8px;padding:5px 10px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.step{display:flex;gap:8px;margin-top:6px;font-size:12.5px}.step b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-size:11px}
+.safe{border:1px solid #c05a1e;color:#c05a1e;border-radius:8px;padding:6px 9px;font-size:12.5px;margin-top:8px}
+.chart{margin-top:8px;padding:6px}
+.chart svg text{fill:var(--mut);font:10px var(--fb)}
+.src{font-size:11px;color:var(--mut);margin-top:6px}
+@media (max-width:860px){main{flex-direction:column}#cv{min-height:58vh;flex:none}aside{width:auto;overflow:visible}html,body{height:auto}}
+</style>
+<header><h1>신기전(神機箭) 3D</h1><span class="sub">문종 화차 · 신기전기 · 조선의 로켓</span>
+ <nav id="tabs" aria-label="메뉴"><button data-tab="build" class="on">제작(짜임·맞춤·이음)</button><button data-tab="arrow">신기전 구조</button><button data-tab="powder">화약</button><button data-tab="launch">발사 시뮬레이션</button><button id="quizb">퀴즈</button></nav>
+</header>
+<main>
+ <div id="cv"><div id="cap"></div><div id="zoom"><button id="zi" aria-label="가까이">＋</button><button id="zo" aria-label="멀리">－</button><button id="zr" aria-label="처음 시점">⟲</button></div><div id="hint">끌어서 돌리기 · 휠로 확대</div><div id="hud" hidden></div></div>
+ <aside>
+  <div class="box" id="buildbox">
+   <h2 id="bT"></h2><div class="d" id="bD"></div>
+   <div class="tags" id="bTags"></div>
+   <div id="jbox"><canvas id="jcv" width="320" height="200" aria-label="결구 확대 3D"></canvas><div class="jt"><b id="jN"></b><div class="m" id="jD"></div></div></div>
+   <div class="row"><button id="bPrev">◀ 이전</button><button id="bPlay">▶ 차례로 보기</button><button id="bNext">다음 ▶</button><label><input id="xray" type="checkbox"> 부재 떼어 보기</label></div>
+   <div id="steps"></div>
+  </div>
+  <div class="box" id="arrowbox" hidden>
+   <h2>신기전 네 종류 <small>『국조오례서례』 병기도설(1474)</small></h2>
+   <div class="row" id="aSel"><button data-a="all" class="on">나란히</button><button data-a="dae">대</button><button data-a="sanhwa">산화</button><button data-a="jung">중</button><button data-a="so">소</button><button data-a="tube">약통 단면</button></div>
+   <div class="d" id="aD"></div>
+   <div class="tw"><table class="t" id="aTbl"></table></div>
+   <div class="m">단위 mm. 병기도설의 척·촌·분·리를 채연석이 환산한 값입니다. 1리 ≈ 0.3mm까지 적었습니다.</div>
+  </div>
+  <div class="box" id="powderbox" hidden></div>
+  <div class="box" id="launchbox" hidden>
+   <h2>발사 시뮬레이션 <small>복원 비행실험 값으로 계산</small></h2>
+   <div class="row"><span class="lb">신기전</span><select id="lType"><option value="dae">대신기전 (발사대 1발)</option><option value="sanhwa">산화신기전 (발사대 1발)</option><option value="jung" selected>중신기전 (화차 100발)</option><option value="so">소신기전 (화차 100발)</option></select></div>
+   <div class="row"><span class="lb">화약 양</span><input id="lProp" type="range" min="0" max="100" step="1" value="50" aria-label="화약 양"><span id="lPropV" class="k"></span></div>
+   <div class="row"><span class="lb">발사각</span><input id="lAng" type="range" min="5" max="70" step="1" value="40" aria-label="발사각"><span id="lAngV" class="k"></span></div>
+   <div class="row" id="rowCore"><span class="lb">철침 길이</span><select id="lCore"><option value="350" selected>350mm (2차 실험)</option><option value="280">280mm (1차 실험)</option></select><span class="k">약선구멍이 길수록 타는 면이 넓어 추력↑</span></div>
+   <div class="row" id="rowRail"><span class="lb">발사대 레일</span><select id="lRail"><option value="3.3" selected>3.3m (개선)</option><option value="1.2">1.2m (처음)</option></select></div>
+   <div class="row" id="rowBomb"><label><input id="lBomb" type="checkbox"> 발화통(폭탄) 달기</label><span class="k">실험에서는 4발 중 3발이 텀블링</span></div>
+   <div class="row"><span class="lb">바람</span><input id="lWind" type="range" min="-8" max="8" step="1" value="0" aria-label="바람(m/s)"><span id="lWindV" class="k"></span></div>
+   <div class="row"><button id="lFire" class="on">🔥 발사</button><button id="lReset">⟲ 다시</button><label><input id="lFollow" type="checkbox" checked> 따라가며 보기</label></div>
+   <div class="reads"><div>사거리 <b id="oR">—</b></div><div>최고 높이 <b id="oH">—</b></div><div>비행 시간 <b id="oT">—</b></div><div>레일 떠날 때 속도 <b id="oV">—</b></div><div>평균 추력 <b id="oF">—</b></div><div>총추력 <b id="oI">—</b></div></div>
+   <div class="row"><span class="lb">피해 반경</span><input id="lDmg" type="range" min="0" max="20" step="0.1" value="5" aria-label="피해 반경(가정, m)"><span id="lDmgV" class="k"></span><span class="as">가정</span></div>
+   <div class="reads" id="dmgReads"><div>탄착 길이 <b id="oDL">—</b></div><div>탄착 폭 <b id="oDW">—</b></div><div>피해 면적 <b id="oDA">—</b></div><div>떨어진 발 수 <b id="oDN">—</b></div></div>
+   <div class="m" id="dmgNote">피해 반경은 기록·실험값이 없어 정한 <b>가정값</b>입니다. 근거로 알려진 것은 발화통 화약의 27%가 쇳가루(뜨거운 파편)라는 기록뿐입니다(박재광 2007). 소신기전은 발화통이 없어 직접 맞아야 합니다.</div>
+   <div id="warn" hidden></div>
+   <div class="chart"><svg id="traj" viewBox="0 0 340 170" role="img" aria-label="비행 궤적"></svg><div class="legend" id="trajLeg"></div></div>
+  </div>
+  <div class="box" id="physbox" hidden>
+   <b>어떻게 계산했나</b>
+   <div class="m">· 추력: 대신기전 약통 지상연소 실험(이용우 외 2009) — 철침 350mm 총추력 925.6Ns·추진 3.81s, 280mm 575.4Ns·3.94s. 실험 약통의 화약은 3,000g으로 보고(가정) 「화약 1kg당 총추력」을 구해 화약 양에 비례시킴.<br>
+   · 무게: 2차 실험 3번 신기전 4.875kg(화약 3,000g) → 화약 뺀 무게 1.875kg. 발화통 0.25kg(가정).<br>
+   · 공기 저항: 2차 실험 3번 사거리(900~1,000m)에 맞춰 정함. 같은 값으로 1차 실험(41° 250~300m, 60° 500~700m)을 계산하면 15~20% 안에서 맞음.<br>
+   · 중·소신기전: 추력 자료가 없어 약통 크기로 화약 양을 줄이고(가정), 시험 사거리(중 200~250m, 소 100~150m)에 맞춤.<br>
+   · 깃이 있어 몸체가 공기 흐름 방향을 따른다고 봄. 텀블링은 실험(4발 중 3발)대로 75% 확률.</div>
+  </div>
+  <details class="box" id="srcbox"><summary>근거와 출처</summary>
+   <div class="m">
+   · 『국조오례서례』 병기도설(1474) — 신기전 4종·신기전기·화차 기록. 치수는 채연석 환산값<br>
+   · 채연석, 「세종시대 로켓과 화약무기의 기술」(한국항공우주연구소) — 신기전 규모표, 약통 충진법<br>
+   · 한국민족문화대백과 「신기전기」(채연석) — 원공목통 100개, 7층, 길이 1,149.4·높이 398.5mm<br>
+   · 박재광(전쟁기념관), 「하늘을 나는 한국 최초의 로켓병기 주화와 신기전」(2007) · 「화차」(2007) — 화차 바퀴 지름 87cm, 차체 2.3m×74cm, 최대 발사각 40°, 시험 사거리<br>
+   · 이용우·허환일, 「대신기전 복원: 비행실험 결과」(한국추진공학회 2009) — 추력·무게·사거리<br>
+   · 이용우 외, 「대신기전 복원: 약통에 대한 기초연구」(2008) — 한지 약통 제작<br>
+   · 김준수·김지훈·장미경, 「천연물을 이용한 조선시대의 염초 제조공정에 관한 연구」, 『화약·발파』 33(2), 2015 — 『신전자초방』 염초 제조 단계<br>
+   · 세종실록 권118 세종 29년 11월 22일 — 주화 배치·효과<br>
+   <b>결구(짜임·맞춤·이음)</b>는 기록에 없어 전통 목공 기법으로 복원한 추정이며, 단계마다 「추정」으로 표시했습니다. 바퀴살 수·바퀴테 조각 수·가로대 수 등도 가정값입니다.</div>
+  </details>
+ </aside>
+</main>
+<div id="quiz" hidden role="dialog" aria-modal="true" aria-labelledby="qq"><div class="box"><div class="k" id="qn"></div><h2 id="qq"></h2><div id="qopts"></div><div class="d" id="qe"></div><div class="row"><button id="qnext">다음</button><button id="qclose">닫기</button></div></div></div>
+<script>%%SCRIPT%%</script>

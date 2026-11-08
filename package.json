@@ -1,0 +1,13 @@
+{
+  "name": "singijeon-3d",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "신기전(神機箭)·화차 3D 교육 웹앱 — 제작(짜임·맞춤·이음), 구조, 화약, 발사 시뮬레이션",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": { "three": "0.160.0" },
+  "devDependencies": { "esbuild": "^0.20.0" }
+}
