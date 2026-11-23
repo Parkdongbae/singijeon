@@ -13,6 +13,8 @@ const LOOKS = {
   day: { elev: 40, azim: 215, turbidity: 3, rayleigh: 1.7, exposure: .62, sun: 4.2, sunCol: 0xfff1dc, hemi: [0xdfeaf5, 0x8a7d62, 1.1], fog: 0xc3d1d6, env: [0x9fc0e0, 0xf4efe2, 0x8d8468], grass: 0xffffff },
   dusk: { elev: 16, azim: 235, turbidity: 6, rayleigh: 2.4, exposure: .8, sun: 4.6, sunCol: 0xffcf9a, hemi: [0xa9b6d6, 0x6a5c4c, 1.7], fog: 0x9a98a6, env: [0x6f82ad, 0xf3c69c, 0x5e5446], grass: 0xd6cfc6 },
 };
+// 흐린 날(비): setWeather(k)로 위 하늘과 섞는다. mie = 하늘이 뿌연 정도, fogK = 안개 시작·끝(far에 대한 비율)
+const OVERCAST = { elev: 55, azim: 215, turbidity: 20, rayleigh: .35, mie: .03, exposure: .42, sun: .8, sunCol: 0xdde3ea, hemi: [0xc5ced6, 0x6b675f, 1.55], fog: 0xa4adb3, fogK: [.015, .25], env: [0xa7b0b8, 0xc4c9cc, 0x5f5b53], grass: 0x9da394 };
 
 export function canvasTex(w, h, draw, rep) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
@@ -96,17 +98,25 @@ export function createStage(box, opts = {}) {
     scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => (m.needsUpdate = true)); });
     smoke.limit = fire.limit = q.puffs; resize();
   }
-  function setTheme(theme) {
-    look = theme === 'dark' ? LOOKS.dusk : LOOKS.day;
-    const u = sky.material.uniforms, phi = THREE.MathUtils.degToRad(90 - look.elev), th = THREE.MathUtils.degToRad(look.azim);
+  // 날씨(선택): setWeather(0~1)로 맑은 하늘 ↔ 흐린 날(OVERCAST)을 섞는다. 부르지 않으면(0) 예전과 똑같다
+  let themeName = 'light', wx = 0, envKey = '';
+  function setTheme(theme) { themeName = theme; look = theme === 'dark' ? LOOKS.dusk : LOOKS.day; applyLook(); }
+  function setWeather(k) { k = THREE.MathUtils.clamp(+k || 0, 0, 1); if (k !== wx) { wx = k; applyLook(); } }
+  function applyLook() {
+    const k = wx, O = OVERCAST, n = (a, b) => a + (b - a) * k, c = (a, b) => new THREE.Color(a).lerp(new THREE.Color(b), k);
+    const u = sky.material.uniforms, phi = THREE.MathUtils.degToRad(90 - n(look.elev, O.elev)), th = THREE.MathUtils.degToRad(n(look.azim, O.azim));
     sunDir.setFromSphericalCoords(1, phi, th);
-    u.sunPosition.value.copy(sunDir); u.turbidity.value = look.turbidity; u.rayleigh.value = look.rayleigh; u.mieCoefficient.value = .004; u.mieDirectionalG.value = .82;
-    renderer.toneMappingExposure = look.exposure;
-    sun.color.set(look.sunCol); sun.intensity = look.sun;
-    hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
-    scene.fog.color.set(look.fog); grassMat.color.set(look.grass); yard.material.color.set(look.grass);
-    hills.children.forEach(h => h.material.color.set(h.userData.base).lerp(new THREE.Color(look.fog), theme === 'dark' ? .55 : .15));
-    makeEnv(look.env);
+    u.sunPosition.value.copy(sunDir); u.turbidity.value = n(look.turbidity, O.turbidity); u.rayleigh.value = n(look.rayleigh, O.rayleigh); u.mieCoefficient.value = n(.004, O.mie); u.mieDirectionalG.value = .82;
+    renderer.toneMappingExposure = n(look.exposure, O.exposure);
+    sun.color.copy(c(look.sunCol, O.sunCol)); sun.intensity = n(look.sun, O.sun);
+    hemi.color.copy(c(look.hemi[0], O.hemi[0])); hemi.groundColor.copy(c(look.hemi[1], O.hemi[1])); hemi.intensity = n(look.hemi[2], O.hemi[2]);
+    const fog = c(look.fog, O.fog), gr = c(look.grass, O.grass);
+    scene.fog.color.copy(fog); scene.fog.near = far * n(.05, O.fogK[0]); scene.fog.far = far * n(.6, O.fogK[1]);
+    grassMat.color.copy(gr); yard.material.color.copy(gr);
+    hills.children.forEach(h => h.material.color.set(h.userData.base).lerp(fog, n(themeName === 'dark' ? .55 : .15, .7)));
+    // 환경맵은 굽는 비용이 커서 날씨를 4단계로 끊어 다시 굽는다
+    const q = Math.round(k * 4) / 4, key = themeName + q;
+    if (key !== envKey) { envKey = key; makeEnv(look.env.map((v, i) => new THREE.Color(v).lerp(new THREE.Color(O.env[i]), q))); }
   }
 
   // ---- 크기·카메라 ----
@@ -168,7 +178,7 @@ export function createStage(box, opts = {}) {
   setQuality(opts.quality || 'auto'); setTheme(opts.theme || 'light');
   cam.position.set(...home[0]); ctl.target.set(...home[1]);
   return { renderer, scene, cam, ctl, sun, yard, smoke, fire, view, setHome, home: () => view(...home), zoom, stopCam: () => { camAnim = null; }, label, setTags, tags,
-    setQuality, setTheme, setLabels: v => { tags.visible = v; }, setReducedMotion: v => { reduced = v; }, isReduced: () => reduced,
+    setQuality, setTheme, setWeather, weather: () => wx, setLabels: v => { tags.visible = v; }, setReducedMotion: v => { reduced = v; }, isReduced: () => reduced,
     quality: () => qName, onFrame: f => frames.push(f), start, resize };
 }
 
