@@ -11,7 +11,7 @@ export const QUALITY = {
 };
 const LOOKS = {
   day: { elev: 40, azim: 215, turbidity: 3, rayleigh: 1.7, exposure: .62, sun: 4.2, sunCol: 0xfff1dc, hemi: [0xdfeaf5, 0x8a7d62, 1.1], fog: 0xc3d1d6, env: [0x9fc0e0, 0xf4efe2, 0x8d8468], grass: 0xffffff },
-  dusk: { elev: 9, azim: 235, turbidity: 8, rayleigh: 2.2, exposure: .5, sun: 3.4, sunCol: 0xffc58a, hemi: [0x8c9cc0, 0x4d4338, 1.0], fog: 0x8f8f9c, env: [0x52648f, 0xf0b98a, 0x4a4238], grass: 0xb8b0a8 },
+  dusk: { elev: 16, azim: 235, turbidity: 6, rayleigh: 2.4, exposure: .8, sun: 4.6, sunCol: 0xffcf9a, hemi: [0xa9b6d6, 0x6a5c4c, 1.7], fog: 0x9a98a6, env: [0x6f82ad, 0xf3c69c, 0x5e5446], grass: 0xd6cfc6 },
 };
 
 export function canvasTex(w, h, draw, rep) {

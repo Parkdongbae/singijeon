@@ -221,6 +221,10 @@ const dmgMat = new THREE.MeshBasicMaterial({ color: 0xc0392b, transparent: true,
 const ringMat = new THREE.MeshBasicMaterial({ color: 0x7d1f12, side: THREE.DoubleSide });
 const trailMat = new THREE.LineBasicMaterial({ color: 0xfff2d8, transparent: true, opacity: .75 });
 const glowMat = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false });
+// 멀리서 전체를 볼 때(따라가기 끔·움직임 줄이기) 신기전 위치를 알려 주는 점
+const leadDot = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffd23f, depthTest: false, sizeAttenuation: false, fog: false, toneMapped: false,
+  map: (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.strokeStyle = '#7d1f12'; g.lineWidth = 8; g.beginPath(); g.arc(32, 32, 24, 0, 7); g.fill(); g.stroke(); return new THREE.CanvasTexture(c); })() }));
+leadDot.scale.set(.022, .022, 1); leadDot.renderOrder = 11; leadDot.visible = false; launchG.add(leadDot);
 let lType = 'jung', lastType = 'jung', lastAng = 0, shots = [], simT = 0, firing = false, lastResult = null, mission = null, pending = null, lastLayer = -1;
 
 function showDamage(moveCam) {
@@ -271,7 +275,7 @@ $('lDmg').addEventListener('input', () => { syncUI(); if (lastResult && !firing)
 }));
 function resetShots() {
   dmgG.clear(); ['oR', 'oH', 'oT', 'oV', 'oF', 'oI', 'oDL', 'oDW', 'oDA', 'oDN'].forEach(i => ($(i).textContent = '—')); flyG.clear(); shots = []; firing = false; simT = 0; pending = null; lastResult = null;
-  $('hud').hidden = true; $('warn').hidden = true; $('mMsg').hidden = true; $('traj').innerHTML = ''; $('trajLeg').innerHTML = '';
+  leadDot.visible = false; $('hud').hidden = true; $('warn').hidden = true; $('mMsg').hidden = true; $('traj').innerHTML = ''; $('trajLeg').innerHTML = '';
   lcart.P.arrowList.forEach(a => (a.visible = true)); stage.smoke.clear(); stage.fire.clear(); $('lFire').disabled = false;
 }
 $('lReset').onclick = () => { resetShots(); stage.home(); };
@@ -348,6 +352,7 @@ $('lFire').onclick = () => {
   $('warn').hidden = !w.length; $('warn').innerHTML = w.join('<br>');
   drawTraj(res, o);
   if (big) sfx.play('launch');
+  stage.stopCam(); cam.position.set(...launchHome()[0]); ctl.target.set(...launchHome()[1]);   // 지난 발사의 탄착 시점에서 시작하지 않게
   // 따라가지 않을 때(또는 움직임 줄이기)는 궤적 전체가 보이는 자리에서 본다
   if (!$('lFollow').checked || stage.isReduced()) { const R = pending.max, H = Math.max(...res.map(r => r.maxH)); stage.view([R * .5, H * .5 + 6, Math.max(R * .95, H * 1.6) + 12], [R * .5, H * .4, 0], 1); }
   prog.done('launch'); prog.award('first-fire');
@@ -401,7 +406,9 @@ function launchFrame(dt) {
     if (!done) { alive++; if (!lead || px > lead.px) lead = { px, wx, wy, s }; }
   });
   if (!big) lcart.P.arrowList.forEach(a => { a.visible = simT < (6 - a.userData.layer) * .6; });
-  if (lead && $('lFollow').checked && !stage.isReduced()) { const tgt = new THREE.Vector3(lead.wx, lead.wy, 0), back = big ? 22 : 9; ctl.target.lerp(tgt, .5); cam.position.lerp(new THREE.Vector3(lead.wx - back * .5, lead.wy + back * .2, back), .35); stage.stopCam(); }
+  const follow = $('lFollow').checked && !stage.isReduced();
+  leadDot.visible = !!lead && !follow; if (lead) leadDot.position.set(lead.wx, lead.wy, 0);
+  if (lead && follow) { const tgt = new THREE.Vector3(lead.wx, lead.wy, 0), back = big ? 22 : 9; ctl.target.lerp(tgt, .5); cam.position.lerp(new THREE.Vector3(lead.wx - back * .5, lead.wy + back * .2, back), .35); stage.stopCam(); }
   $('hud').hidden = false; $('hud').textContent = `${simT.toFixed(1)}초 · ${lead ? '앞선 신기전 ' + lead.px.toFixed(0) + 'm' : '모두 떨어짐'}`;
   if (!alive && simT > 1) {
     firing = false; $('lFire').disabled = false; const q = pending;
